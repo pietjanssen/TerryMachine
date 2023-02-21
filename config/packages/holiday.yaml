@@ -1,0 +1,176 @@
+###############################################################################
+#   @author         :   Mahasri Kalavala
+#   @date           :   10/28/2017
+#   @package        :   Holidays
+#   @description    :   Retrieves the holiday
+###############################################################################
+#-------------------------------------------
+# Holiday Package
+# @CCOSTAN
+# Repo : https://github.com/CCOSTAN/Home-AssistantConfig
+# Video Breakdown - https://www.vcloudinfo.com/2019/02/breaking-down-the-flag-sensor-in-home-assistant.html
+#-------------------------------------------
+## Modified for my own fun stuff!
+
+homeassistant:
+  customize:
+
+    sensor.holiday:
+
+      icon: mdi:beach
+      friendly_name: US Holiday
+    sensor.flag:
+
+      icon: mdi:flag
+      friendly_name: Flag Day
+
+###############################################################################
+# Sensor updates once every 4 hours (14400 seconds) & runs 6 times in 24 hours
+#
+# First it checks for holiday in static section, if that doesn't exist,
+# it checks in the dynamic section. If neither exists, the value will be empty
+###############################################################################
+sensor:
+  - platform: rest
+    resource: https://raw.githubusercontent.com/CCOSTAN/Home-AssistantConfig/master/config/json_data/holidays.json
+    name: Holiday
+    scan_interval: 14400
+    value_template: >
+      {% set today = now().month  ~ '/' ~ now().day  %}
+      {% set holiday =  value_json.MAJOR_US.static[ today ] %}
+      {% if holiday | trim == "" %}
+        {% set today = now().month  ~ '/' ~ now().day ~ '/' ~ now().year %}
+        {% set holiday =  value_json.MAJOR_US.dynamic[ today ] %}
+      {% endif %}
+      {{ holiday }}
+
+################################################################################
+# Sensor Uses Flag data from this calendar - http://www.webcal.fi/en-US/flag_days.php
+################################################################################
+  - platform: rest
+    resource: https://www.webcal.fi/cal.php?id=335&format=json&start_year=current_year&end_year=current_year&tz=America%2FNew_York
+    name: Flag
+    scan_interval: 14400
+    value_template: >-
+      {%- set now_string = now().strftime('%Y-%m-%d') %}
+      {% for day_val in value_json if day_val.date == now_string  %}
+        True
+        {% else %}
+        False
+      {% endfor -%}
+
+################################################################################
+# Countdown Sesor using WolfRam Alpha Natural language queries
+################################################################################
+#
+# - platform: command_line
+#   name: Halloween Countdown
+#   command: "HALLOWEEN=`date -d 'Oct 31' +%j | awk '{print $1 + 0}'`; TODAY=`date +%j | awk '{print $1 + 0}'`; DAYS=$(($HALLOWEEN - $TODAY)); echo $DAYS"
+#   scan_interval: 43200
+#
+# - platform: command_line
+#   command: "XMAS=`date -d 'Dec 25' +%j | awk '{print $1 + 0}'`; TODAY=`date +%j | awk '{print $1 + 0}'`; DAYS=$(($XMAS - $TODAY)); echo $DAYS"
+#   name: Christmas Countdown
+#   scan_interval: 43200
+
+  - platform: rest
+    name: Halloween Countdown
+    resource: !secret wolframalpha_halloween_api
+    value_template: "{{ (value|replace(' days', '')) | int }}"
+    unit_of_measurement: Days
+    scan_interval: 43200
+
+  - platform: rest
+    name: Christmas Countdown
+    resource: !secret wolframalpha_xmas_api
+    value_template: "{{ (value|replace(' days', '')) | int }}"
+    unit_of_measurement: Days
+    scan_interval: 43200
+
+  - platform: rest
+    name: Easter Countdown
+    resource: !secret wolframalpha_easter_api
+    value_template: "{{ (value|replace(' days', '')) | int }}"
+    unit_of_measurement: Days
+    scan_interval: 43200
+
+  - platform: rest
+    name: Mothers Countdown
+    resource: !secret wolframalpha_mothersday_api
+    value_template: "{{ (value|replace(' days', '')) | int }}"
+    unit_of_measurement: Days
+    scan_interval: 43200
+
+  - platform: rest
+    name: Fathers Countdown
+    resource: !secret wolframalpha_fathersday_api
+    value_template: "{{ (value|replace(' days', '')) | int }}"
+    unit_of_measurement: Days
+    scan_interval: 43200
+
+  - platform: rest
+    name: Chanukkah Countdown
+    resource: !secret wolframalpha_chanukkah_api
+    value_template: "{{ (value|replace(' days', '')) | int }}"
+    unit_of_measurement: Days
+    scan_interval: 43200
+
+  - platform: rest
+    name: Labor Day Countdown
+    resource: !secret wolframalpha_labor_api
+    value_template: "{{ (value|replace(' days', '')) | int }}"
+    unit_of_measurement: Days
+    scan_interval: 43200
+
+  - platform: rest
+    name: Memorial Day Countdown
+    resource: !secret wolframalpha_memorial_api
+    value_template: "{{ (value|replace(' days', '')) | int }}"
+    unit_of_measurement: Days
+    scan_interval: 43200
+
+  - platform: rest
+    name: Thanksgiving Day Countdown
+    resource: !secret wolframalpha_thanksgiving_api
+    value_template: "{{ (value|replace(' days', '')) | int }}"
+    unit_of_measurement: Days
+    scan_interval: 43200
+###############################################################################
+# Automation that notifies of a Holiday "state" change
+###############################################################################
+automation:
+  - alias: Notify Holiday State Change
+    id: 77ce63e4-0a6e-485e-85a8-687a5a2d9df7
+
+    initial_state: true
+    trigger:
+      - platform: state
+        entity_id:
+          - sensor.holiday
+    condition:
+      - condition: template
+        value_template: "{{ states('sensor.holiday') != 'unknown' }}"
+      - condition: template
+        value_template: "{{ states.sensor.holiday.state | trim != '' }}"
+    action:
+
+      - delay: '0{{ (range(4, 8)|random|int) }}:{{ range(0,5) | random | int }}{{ range(0,9) | random | int }}:{{ range(0,5) | random | int }}{{ range(0,9) | random | int }}'
+      - service: script.tweet_engine_image
+        data:
+          tweet: >
+            {{ [
+            "Today is {{ states.sensor.holiday.state }}. Time to adjust the outside light colors!",
+            "Today is {{ states.sensor.holiday.state }}.",
+            "Is today {{ states.sensor.holiday.state }}?",
+            "Just checked with Alexa & today is {{ states.sensor.holiday.state }}."
+            ] | random + [
+            " #DayOff",
+            "(https://www.vmwareinfo.com/2017/07/my-smart-home-look-at-parts-that-make.html)",
+            "(https://www.vmwareinfo.com/2017/08/diy-outdoor-smart-home-led-strips.html)",
+            "https://www.vcloudinfo.com/2019/02/everyday-holiday-smart-lights-valentines-day-edition.html)",
+            "#{{ states.sensor.holiday.state }}"
+            ] | random }}
+          image: >-
+            {{ [
+            "/config/www/custom_ui/floorplan/images/branding/light4.png"
+            ] | random }}

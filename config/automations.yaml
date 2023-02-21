@@ -1,0 +1,45 @@
+- id: '1676845093322'
+  alias: New Automation
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - input_boolean.alert_mode
+    from: 'off'
+    to: 'on'
+  condition: []
+  action:
+  - service: media_player.play_media
+    target:
+      entity_id: media_player.wheatley
+    data:
+      media_content_id: media-source://tts/google_translate?message=Hello+Boris%2C+you+can+play+any+text+on+any+supported+media+player%21
+      media_content_type: provider
+    metadata:
+      title: Hello Boris, you can play any text on any supported media player!
+      thumbnail: https://brands.home-assistant.io/_/google_translate/logo.png
+      media_class: app
+      children_media_class:
+      navigateIds:
+      - {}
+      - media_content_type: app
+        media_content_id: media-source://tts
+      - media_content_type: provider
+        media_content_id: media-source://tts/google_translate?message=Hello+Boris%2C+you+can+play+any+text+on+any+supported+media+player%21
+  mode: single
+- id: '1676849456991'
+  alias: New Automation
+  description: ''
+  trigger:
+  - platform: device
+    device_id: c01f019a2ad2d62f6b4c7a20a3c59131
+    domain: device_tracker
+    entity_id: device_tracker.rufus
+    type: enters
+    zone: zone.home
+  condition:
+  - condition: state
+    entity_id: person.boris
+    state: not_home
+  action: []
+  mode: single

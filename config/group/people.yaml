@@ -1,0 +1,10 @@
+family:
+  entities:
+    - person.boris
+
+bed:
+  entities: []
+
+arriving:
+  name: Arriving
+  entities: []
