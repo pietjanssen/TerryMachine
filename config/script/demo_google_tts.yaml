@@ -1,0 +1,21 @@
+demo_google_tts:
+  alias: Demo Google TTS
+  sequence:
+  - service: tts.google_translate_say
+    data:
+      cache: false
+      entity_id: media_player.wheatley
+      message: Hello. I am the Google TTS Home Assistant
+  mode: single
+  icon: mdi:google
+
+demo_amazon_polly_tts:
+  alias: Demo Amazon Polly TTS
+  sequence:
+  - service: tts.amazon_polly_say
+    data:
+      cache: false
+      entity_id: media_player.wheatley
+      message: Hello. I am the Amazon Polly Home Assistant.
+  mode: single
+  icon: mdi:account

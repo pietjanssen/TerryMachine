@@ -1,0 +1,22 @@
+#-------------------------------------------
+# @CCOSTAN
+# Original Repo : https://github.com/CCOSTAN/Home-AssistantConfig
+# Read all about this and more at https://vCloudInfo.com
+# Additional Light groups control file for better Alexa / HomeKit support
+# https://github.com/CCOSTAN/Home-AssistantConfig/issues/764
+######################################################################################################
+
+
+- platform: group
+  name: Woonkamer Lights
+  entities:
+    - light.blake
+    - light.dinner_light
+    - light.hannahs_light
+    - light.tv_light
+
+- platform: group
+  name: Bedroom lights
+  entities:
+    - light.bed_light
+    - light.staircase_light

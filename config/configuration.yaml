@@ -1,3 +1,11 @@
+homeassistant:
+  # packages: !include_dir_named packages
+
+sensor:
+  - platform: time_date
+    display_options:
+      - 'time'
+      - 'date'
 
 # Loads default set of integrations. Do not remove.
 default_config:
@@ -11,9 +19,15 @@ tts:
   - platform: google_translate
     language: 'en'
     tld: co.uk
+  - platform: amazon_polly
+    aws_access_key_id: !secret aws_access_key_ID
+    aws_secret_access_key: !secret aws_secret_access_key
+    voice: Matthew
+    cache: True
 
 automation: !include_dir_merge_list automation
 # automation: !include automations.yaml
 group: !include_dir_merge_named group
 script: !include_dir_merge_named script
 input_boolean: !include_dir_merge_named input_boolean
+light: !include light_groups.yaml

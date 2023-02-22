@@ -11,12 +11,6 @@
 speech_processing:
   mode: queued
   sequence:
-    # - service: mqtt.publish
-    #   data:
-    #     topic: 'polly/lastmsg'
-    #     payload: "This message is from {{ now().strftime('%-I') }}:{{ now().strftime('%M') }} {{ now().strftime('%p') }}. {{ speech_message | striptags | truncate(220)}}"
-    #     retain: true
-
     - condition: and
       conditions:
         - condition: or
@@ -49,7 +43,7 @@ speech_processing:
         entity_id: >
           {{ media_player }}
         volume_level: >-
-          {% if now().strftime('%H')|int < 12 and now().strftime('%H')|int > 6 %}
+          {% if now().strftime('%H')|int < 12 and now().strftime('%H')|int > 9 %}
             0.3
           {% elif now().strftime('%H')|int > 12 and now().strftime('%H')|int < 20 %}
             0.5
