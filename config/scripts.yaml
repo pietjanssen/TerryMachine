@@ -15,6 +15,9 @@ demo_amazon_polly_tts:
     data:
       cache: false
       entity_id: media_player.wheatley
-      message: Hello. I am the Amazon Polly Home Assistant.
+      message: Hello Hannah! You were built to tackle the world. You are not the cheerleader
+        for someone else. You are not meant to sit on the sidelines. You were built
+        to create your own life and challenge yourself daily. Go out there and tackle
+        today, I believe in you!
   mode: single
   icon: mdi:account
