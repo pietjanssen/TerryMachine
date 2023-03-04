@@ -8,8 +8,21 @@
     - person.boris
     from: not_home
     to: home
-  condition: []
+  - platform: state
+    entity_id:
+    - person.hannah
+    from: not_home
+    to: home
+  condition:
+  - condition: state
+    entity_id: input_boolean.sleep_mode
+    state: 'off'
   action:
+  - delay:
+      hours: 0
+      minutes: 1
+      seconds: 0
+      milliseconds: 0
   - service: group.set
     data:
       object_id: arriving
@@ -26,6 +39,17 @@
         is_are)}}"
       call_responsibilities: 1
       call_no_announcement: 1
+  - if:
+    - condition: state
+      entity_id: light.woonkamer
+      state: 'off'
+    - condition: sun
+      after: sunset
+    then:
+    - service: light.turn_on
+      data: {}
+      target:
+        entity_id: light.woonkamer
   - service: group.set
     data:
       object_id: arriving
@@ -87,22 +111,6 @@
         '
       call_no_announcement: 1
   mode: single
-- id: '1677194945480'
-  alias: New device connected
-  description: Play a speech notification when a new device connected to the Home
-    Assistant.
-  trigger:
-  - platform: event
-    event_type: device_tracker_new_device
-  condition: []
-  action:
-  - wait_template: '{{ not is_state(''media_player.wheatley'', ''playing'') }}'
-    continue_on_timeout: false
-  - service: script.speech_engine
-    data:
-      NewDevice: There has been a new device detected on the network.  Be sure to
-        appropriately catagorize {{trigger.event.data.host_name}} within Circle.
-  mode: single
 - id: '1677195215202'
   alias: TV Time
   description: Turns off TV Lights and other actions when the TV is turned in the
@@ -147,7 +155,7 @@
       entity_id: light.tv_lights
   mode: single
 - id: '1677197404905'
-  alias: Away mode
+  alias: Turn off all automations when Away
   description: 'Turn off most automation when the Family is away '
   trigger:
   - platform: state
@@ -220,11 +228,11 @@
   description: ''
   trigger:
   - platform: time_pattern
-    minutes: '0'
+    minutes: '30'
   condition:
   - condition: time
-    after: '11:59:00'
-    before: '12:00:00'
+    after: '12:00:00'
+    before: '22:00:00'
   - condition: or
     conditions:
     - condition: state
@@ -233,6 +241,9 @@
     - condition: state
       entity_id: input_boolean.guest_mode
       state: 'on'
+  - condition: state
+    entity_id: input_boolean.sleep_mode
+    state: 'off'
   action:
   - service: media_player.volume_set
     data:
@@ -245,8 +256,8 @@
     target:
       entity_id: media_player.wheatley
     data:
-      media_content_id: '{% if now().strftime("%M")|int == 30 %} https://raw.githubusercontent.com/CCOSTAN/Home-AssistantConfig/master/config/sounds/gf_clock/01-hour.mp3
-        {% else %} https://raw.githubusercontent.com/CCOSTAN/Home-AssistantConfig/master/config/sounds/gf_clock/{{now().strftime("%I")}}-hour.mp3
+      media_content_id: '{% if now().strftime("%M")|int == 30 %} https://raw.githubusercontent.com/CCOSTAN/Home-AssistantConfig/master/config/sounds/cuckoo-clock-01.wav
+        {% else %} https://raw.githubusercontent.com/CCOSTAN/Home-AssistantConfig/master/config/sounds/cuckoo-clock-{{now().strftime("%I")}}.wav
         {% endif %}
 
         '
@@ -261,11 +272,6 @@
     - binary_sensor.ikea_of_sweden_tradfri_motion_sensor_motion_3
     from: 'off'
     to: 'on'
-  - platform: state
-    entity_id:
-    - group.family
-    from: not_home
-    to: home
   condition:
   - condition: state
     entity_id: light.ikea_of_sweden_tradfri_bulb_e27_cws_806lm_light
@@ -279,10 +285,21 @@
       entity_id: input_boolean.guest_mode
       state: 'on'
   action:
-  - service: light.turn_on
-    data: {}
-    target:
-      entity_id: light.ikea_of_sweden_tradfri_bulb_e27_cws_806lm_light
+  - if:
+    - condition: time
+      after: 00:00:00
+      before: 09:00:00
+    then:
+    - service: light.turn_on
+      data:
+        brightness_pct: 33
+      target:
+        entity_id: light.ikea_of_sweden_tradfri_bulb_e27_cws_806lm_light
+    else:
+    - service: light.turn_on
+      data: {}
+      target:
+        entity_id: light.ikea_of_sweden_tradfri_bulb_e27_cws_806lm_light
   mode: single
 - id: '1677742471182'
   alias: Hall light OFF
@@ -293,39 +310,15 @@
     - binary_sensor.ikea_of_sweden_tradfri_motion_sensor_motion_3
     to: 'off'
     from: 'on'
-  - platform: state
-    entity_id:
-    - group.family
-    from: home
-    to: not_home
   condition:
   - condition: state
     entity_id: light.ikea_of_sweden_tradfri_bulb_e27_cws_806lm_light
     state: 'on'
-  - condition: state
-    entity_id: group.family
-    state: home
   action:
   - service: light.turn_off
     data: {}
     target:
       entity_id: light.ikea_of_sweden_tradfri_bulb_e27_cws_806lm_light
-  mode: single
-- id: '1677781662441'
-  alias: New Automation
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - binary_sensor.ikea_of_sweden_tradfri_motion_sensor_motion
-    from: 'off'
-    to: 'on'
-  condition: []
-  action:
-  - service: light.turn_on
-    data: {}
-    target:
-      entity_id: light.blake
   mode: single
 - id: '1677940707388'
   alias: Boven light ON
@@ -351,6 +344,9 @@
   - condition: state
     entity_id: sun.sun
     state: below_horizon
+  - condition: state
+    entity_id: input_boolean.sleep_mode
+    state: 'off'
   action:
   - service: light.turn_on
     data: {}
@@ -375,4 +371,22 @@
     data: {}
     target:
       entity_id: light.boven
+  mode: single
+- id: '1677942364759'
+  alias: Notify Boris the Washing room is done.
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.washing_room_power_plug_power
+    for:
+      hours: 0
+      minutes: 1
+      seconds: 0
+    below: 5
+  condition: []
+  action:
+  - service: notify.mobile_app_rufus
+    data:
+      title: TerryMachine
+      message: The washing room is done.
   mode: single
