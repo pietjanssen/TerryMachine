@@ -1,0 +1,10 @@
+family:
+  name: Family
+  all: false
+  entities:
+    - person.boris
+    - person.hannah
+
+arriving:
+  name: Arriving
+  entities: []

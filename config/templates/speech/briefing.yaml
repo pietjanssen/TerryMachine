@@ -1,47 +1,4 @@
 >-
-  {%- macro dark_outside() -%}
-  {{ [
-      'It is pretty dark outside. I will turn on the outside lights now.',
-      'The sun is offical down. Exterior Cameras are now motion activated.',
-      'The sun has been ushered off the stage. Activating the perimiter cameras.',
-      'It is a little past Sunset. Time to turn on the outside lights. I am on it.',
-      'I will switch on the outside lights. It is getting dark outside.',
-      'Time to turn on the front lights. I will take care of it.',
-      'Switching to night mode! ',
-      'If you have not looked outside lately the light of the day is gone.',
-      'The outside world has switched to dark mode.'
-  ]|random }}
-  {%- endmacro -%}
-
-  {%- macro responsibilities() -%}
-  
-  {%- endmacro -%}
-
-  {%- macro light_check() -%}
-  {% if states.group.all_lights.state != 'off' -%}
-      There are
-  {% for state in states.light if state.state == 'on' -%}
-      {%- if loop.last -%}
-      {{ loop.index }}
-      {%- endif -%}
-  {%- endfor %}
-  lights on right now.
-  {% set comma = joiner(', ') %}
-  The
-  {% for group in states.group|groupby('state') -%}
-      {%- for entity in group.list if entity.state == 'on'
-      and entity.name.split(' ')[1]|lower == 'lights'
-      and entity.name.split(' ')[0]|lower != 'all'
-      and entity.name.split(' ')[0]|lower != 'interior'
-      -%}
-      {{ 'and' if loop.last and not loop.first else comma() }}
-      {{ entity.name|replace('Lights','')}}
-      {%- endfor -%}
-  {%- endfor -%}
-  lights are on.
-  {%- endif -%}
-  {%- endmacro -%}
-
   {%- macro moon() -%}
     {%- if states.sensor.moon.state == 'Full moon' -%}
       {{ [
@@ -51,37 +8,6 @@
            "If you want to see the full moon tonight is the night."
            ] | random }}
     {%- endif -%}
-  {%- endmacro -%}
-
-  {%- macro holiday() -%}
-  {% if states.sensor.holiday.state != '' %}
-      Today is {{ states.sensor.holiday.state }}.
-  {% endif %}
-  {%- endmacro -%}
-
-  {# YOUTUBE VIDEO ********* https://www.vcloudinfo.com/2019/11/adding-days-until-sensor-to-my-home-assistant-speech-routines.html #}
-  {%- macro days_until() -%}
-  {%- if states('sensor.mothers_countdown') | int(9999)< 20  -%}
-    and don't forget, there is only {{ states.sensor.mothers_countdown.state }} days until Mothers day!
-  {%- elif states('sensor.fathers_countdown') | int(9999)< 20  -%}
-      and don't forget, there are {{ states.sensor.fathers_countdown.state }} days until Fathers day!
-  {%- elif states('sensor.easter_countdown') | int(9999)< 15  -%}
-      and don't forget, there are {{ states.sensor.easter_countdown.state }} days until Easter Sunday!
-  {%- elif states('sensor.thanksgiving_day_countdown') | int(9999)< 10 and states('sensor.thanksgiving_day_countdown') | int(9999)> 0  -%}
-      and don't forget, there are {{ states.sensor.thanksgiving_day_countdown.state }} days until Thanksgiving
-  {%- elif states('sensor.thanksgiving_day_countdown') | int(9999)< 1  -%}
-      and don't forget, Thanksgiving is tomorrow!
-  {%- elif states('sensor.halloween_countdown') | int(9999)< 30 and states('sensor.halloween_countdown') | int(9999)> 0 -%}
-      and don't forget, there are {{ states.sensor.halloween_countdown.state }} Spooky days until Halloween!
-  {%- elif states('sensor.halloween_countdown') | int(9999)< 1  -%}
-      and don't forget, Tomorrow is Halloween!
-  {%- elif states('sensor.chanukkah_countdown') | int(9999)< 15  -%}
-      and don't forget, there are {{ states.sensor.chanukkah_countdown.state }} days until Chanukkah!
-  {%- elif states('sensor.christmas_countdown') | int(9999)< 30 and states('sensor.christmas_countdown') | int(9999)> 0  -%}
-      and don't forget, there are {{ states.sensor.christmas_countdown.state }} Merry days until Christmas!
-  {%- elif states('sensor.christmas_countdown') | int(9999)< 1  -%}
-      and don't forget, Santa Claus is coming tomorrow!
-  {% endif %}
   {%- endmacro -%}
 
   {# a macro that removes all newline characters, empty spaces, and returns formatted text and replaces underscores with spaces  #}
@@ -110,33 +36,14 @@
     {# Called from Annoucenments #}
     {{ personarriving | default }}
 
-    {# Called from Nest when thermostats turn on #}
-    {{ NestStatus | default }}
-
-    {% if (states('sensor.blitzortung_lightning_counter')|int(0)) > 0 %}
-    {{ lightning() }}
-    {% endif %}
-
-    {% if call_dark_outside == 1 %}
-    {{ dark_outside() }}
-    {% endif %}
-
     {{ NewDevice | default }}
-
-    {% if call_light_check == 1 %}
-    {{ light_check() }}
-    {% endif %}
-
-    {% if call_responsibilities == 1 %}
-    {{ responsibilities() }}
-    {% endif %}
 
     {% if value1 is not none %}
     {{ value1 | default }}
     {% endif %}
 
-    {# call a Random fact about the house or inspiration quote #}
-    {{ ([moon, holiday, days_until]|random)() }}
+    {# call a Random fact about the house #}
+    {{ ([moon, days_until]|random)() }}
 
   {%- endmacro -%}
   {{- cleanup(mother_of_all_macros()) -}}

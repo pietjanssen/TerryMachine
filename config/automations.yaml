@@ -1,0 +1,378 @@
+- id: '1677190367431'
+  alias: People Greeting
+  description: Whenever a Family Member comes home, a short greeting will be played
+    to welcome them.
+  trigger:
+  - platform: state
+    entity_id:
+    - person.boris
+    from: not_home
+    to: home
+  condition: []
+  action:
+  - service: group.set
+    data:
+      object_id: arriving
+      add_entities: '{{ trigger.to_state.entity_id }}'
+  - service: script.speech_engine
+    data:
+      personarriving: "{% set person = expand('group.arriving')|map(attribute='name')|join('
+        and ') %} {% set peoplecount = expand('group.arriving') | count %} {% if peoplecount
+        == 1 %}\n  {% set is_are = ' is ' %}\n{% else %}\n  {% set is_are = ' are
+        ' %}\n{% endif %}   {%- macro greeting_sentence(person, is_are) -%}  {{ [
+        \n  \"Welcome back home \" ~ person, \n  \"You had me at hello \" ~ person,
+        \n  \"Guess who is home?\" ~ person ~ is_are , \n  \"The wifi just got a little
+        more crowded. Welcome Home\" ~ person, \n] | random }}  {%- endmacro -%}  {{greeting_sentence(person,
+        is_are)}}"
+      call_responsibilities: 1
+      call_no_announcement: 1
+  - service: group.set
+    data:
+      object_id: arriving
+      entities: []
+  mode: restart
+- id: '1677194632277'
+  alias: Guest Mode Audio feedback
+  description: Notify the house that Guest mode has been enabled.
+  trigger:
+  - platform: state
+    entity_id:
+    - input_boolean.guest_mode
+    from: 'off'
+    to: 'on'
+  condition: []
+  action:
+  - service: script.speech_engine
+    data:
+      value1: '{{ [ "Guest Mode has been enabled for the rest of the day.", "Switching
+        to guest mode! ", "I have enabled guest mode for the rest of the day. ", "System
+        Guest Mode has been enabled. I will minimize the amount of automation for
+        today.", "Look but do not touch mode enabled.  Otherwise known as Guest Mode
+        around here.", "Guest mode enabled or as I like to call it, Look but do not
+        touch mode.", "Awesome! I will take the rest of the day off.  Guest mode has
+        been enabled.", "Guest Mode enabled.  In other words, Manual Mode engaged.",
+        "Guest mode enabled.  Have Fun!", "Family, Friends and Fun.  Guest mode has
+        been enabled today.", "Guest Mode enabled.  I am still doing stuff behind
+        the scenes but probably will not turn off the lights on you." ] | random }}
+
+        '
+      call_responsibilities: 1
+      call_no_announcement: 1
+  mode: single
+- id: '1677194733697'
+  alias: Guest Mode Reset
+  description: Notify the user Guest Mode has been disabled.
+  trigger:
+  - platform: state
+    entity_id:
+    - group.family
+    from: not_home
+    to: home
+  condition:
+  - condition: state
+    entity_id: input_boolean.guest_mode
+    state: 'on'
+  action:
+  - service: input_boolean.turn_off
+    data: {}
+    target:
+      entity_id: input_boolean.guest_mode
+  - service: script.speech_engine
+    data:
+      value1: '{{ [ "Guest Mode has been disabled and normal automations will continue.",
+        "Let me disable guest mode since there are no longer any guests in the house.
+        ", "I have disabled guest mode and have resumed normal operations! ", "Disabling
+        guest mode! " ] | random }}
+
+        '
+      call_no_announcement: 1
+  mode: single
+- id: '1677194945480'
+  alias: New device connected
+  description: Play a speech notification when a new device connected to the Home
+    Assistant.
+  trigger:
+  - platform: event
+    event_type: device_tracker_new_device
+  condition: []
+  action:
+  - wait_template: '{{ not is_state(''media_player.wheatley'', ''playing'') }}'
+    continue_on_timeout: false
+  - service: script.speech_engine
+    data:
+      NewDevice: There has been a new device detected on the network.  Be sure to
+        appropriately catagorize {{trigger.event.data.host_name}} within Circle.
+  mode: single
+- id: '1677195215202'
+  alias: TV Time
+  description: Turns off TV Lights and other actions when the TV is turned in the
+    evening.
+  trigger:
+  - platform: sun
+    event: sunset
+    offset: 0
+  - platform: state
+    entity_id:
+    - media_player.samsung_7_series_50
+    from: 'off'
+    to: 'on'
+  - platform: time
+    at: '20:00:00'
+  condition:
+  - condition: and
+    conditions:
+    - condition: state
+      entity_id: group.family
+      state: home
+    - condition: state
+      entity_id: sun.sun
+      state: below_horizon
+    - condition: state
+      entity_id: input_boolean.guest_mode
+      state: 'off'
+    - condition: time
+      after: '20:00:00'
+      before: 08:00:00
+    - condition: state
+      entity_id: media_player.samsung_7_series_50
+      state: 'on'
+    - condition: state
+      entity_id: light.tv_lights
+      state: 'on'
+  action:
+  - service: light.turn_on
+    data:
+      brightness_pct: 30
+    target:
+      entity_id: light.tv_lights
+  mode: single
+- id: '1677197404905'
+  alias: Away mode
+  description: 'Turn off most automation when the Family is away '
+  trigger:
+  - platform: state
+    entity_id:
+    - group.family
+    to: not_home
+    from: home
+  condition:
+  - condition: state
+    entity_id: group.family
+    state: not_home
+  - condition: state
+    entity_id: input_boolean.guest_mode
+    state: 'off'
+  action:
+  - service: script.interior_off
+    data: {}
+  mode: single
+- id: '1677198063304'
+  alias: Detect & Adjust Lights
+  description: Detect & Adjust light brightness based on time of day.
+  trigger:
+  - platform: event
+    event_type: state_changed
+  condition:
+  - condition: state
+    entity_id: group.family
+    state: home
+  - condition: template
+    value_template: '{{ trigger.event.data is not none }}'
+  - condition: template
+    value_template: '{{ trigger.event.data.entity_id is not none }}'
+  - condition: template
+    value_template: '{{ trigger.event.data.entity_id.split(''.'')[0] == ''light''
+      }}'
+  - condition: template
+    value_template: '{{ trigger.event.data.entity_id.split(''_'')[0] != ''light.blake''
+      }}'
+  - condition: template
+    value_template: '{{ trigger.event.data.entity_id.split(''_'')[0] != ''light.dinner_light''
+      }}'
+  - condition: template
+    value_template: '{{ trigger.event.data.entity_id.split(''_'')[0] != ''light.hannahs_light''
+      }}'
+  - condition: template
+    value_template: '{{ trigger.event.data.entity_id.split(''_'')[0] != ''light.tv_light''
+      }}'
+  - condition: template
+    value_template: '{{ trigger.event.data.entity_id.split(''_'')[0] != ''light.bed_light''
+      }}'
+  - condition: template
+    value_template: '{{ trigger.event.data.entity_id.split(''_'')[0] != ''light.staircase_light''
+      }}'
+  - condition: template
+    value_template: '{{ trigger.event.data.new_state.state == ''on'' }}'
+  - condition: template
+    value_template: '{{ trigger.event.data.old_state.state == ''off'' }}'
+  action:
+  - service: light.turn_on
+    data:
+      entity_id: '{{ trigger.event.data.entity_id }}'
+      brightness: "{% set hour=states(\"sensor.time\").split(':')[0] | int %} {%-
+        if hour >= 5 and hour < 12  -%}\n  50\n{%- elif hour >= 12 and hour <20  -%}\n
+        \ 255\n{%- elif hour >= 20 and hour <24  -%}\n  80\n{%- else -%}\n  15\n{%-
+        endif %}\n"
+  mode: parallel
+  max: 10
+- id: '1677363387723'
+  alias: Big Ben Clock
+  description: ''
+  trigger:
+  - platform: time_pattern
+    minutes: '0'
+  condition:
+  - condition: time
+    after: '11:59:00'
+    before: '12:00:00'
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: group.family
+      state: home
+    - condition: state
+      entity_id: input_boolean.guest_mode
+      state: 'on'
+  action:
+  - service: media_player.volume_set
+    data:
+      volume_level: 0.22
+    target:
+      entity_id: media_player.wheatley
+  - wait_template: '{{ not is_state(''media_player.wheatley'', ''playing'') }}'
+    continue_on_timeout: true
+  - service: media_player.play_media
+    target:
+      entity_id: media_player.wheatley
+    data:
+      media_content_id: '{% if now().strftime("%M")|int == 30 %} https://raw.githubusercontent.com/CCOSTAN/Home-AssistantConfig/master/config/sounds/gf_clock/01-hour.mp3
+        {% else %} https://raw.githubusercontent.com/CCOSTAN/Home-AssistantConfig/master/config/sounds/gf_clock/{{now().strftime("%I")}}-hour.mp3
+        {% endif %}
+
+        '
+      media_content_type: audio/mp4
+  mode: single
+- id: '1677742182670'
+  alias: Hall light ON
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - binary_sensor.ikea_of_sweden_tradfri_motion_sensor_motion_3
+    from: 'off'
+    to: 'on'
+  - platform: state
+    entity_id:
+    - group.family
+    from: not_home
+    to: home
+  condition:
+  - condition: state
+    entity_id: light.ikea_of_sweden_tradfri_bulb_e27_cws_806lm_light
+    state: 'off'
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: group.family
+      state: home
+    - condition: state
+      entity_id: input_boolean.guest_mode
+      state: 'on'
+  action:
+  - service: light.turn_on
+    data: {}
+    target:
+      entity_id: light.ikea_of_sweden_tradfri_bulb_e27_cws_806lm_light
+  mode: single
+- id: '1677742471182'
+  alias: Hall light OFF
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - binary_sensor.ikea_of_sweden_tradfri_motion_sensor_motion_3
+    to: 'off'
+    from: 'on'
+  - platform: state
+    entity_id:
+    - group.family
+    from: home
+    to: not_home
+  condition:
+  - condition: state
+    entity_id: light.ikea_of_sweden_tradfri_bulb_e27_cws_806lm_light
+    state: 'on'
+  - condition: state
+    entity_id: group.family
+    state: home
+  action:
+  - service: light.turn_off
+    data: {}
+    target:
+      entity_id: light.ikea_of_sweden_tradfri_bulb_e27_cws_806lm_light
+  mode: single
+- id: '1677781662441'
+  alias: New Automation
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - binary_sensor.ikea_of_sweden_tradfri_motion_sensor_motion
+    from: 'off'
+    to: 'on'
+  condition: []
+  action:
+  - service: light.turn_on
+    data: {}
+    target:
+      entity_id: light.blake
+  mode: single
+- id: '1677940707388'
+  alias: Boven light ON
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - binary_sensor.ikea_of_sweden_tradfri_motion_sensor_motion_2
+    from: 'off'
+    to: 'on'
+  condition:
+  - condition: state
+    entity_id: light.boven
+    state: 'off'
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: group.family
+      state: home
+    - condition: state
+      entity_id: input_boolean.guest_mode
+      state: 'on'
+  - condition: state
+    entity_id: sun.sun
+    state: below_horizon
+  action:
+  - service: light.turn_on
+    data: {}
+    target:
+      entity_id: light.boven
+  mode: single
+- id: '1677941084964'
+  alias: Boven light OFF
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - binary_sensor.ikea_of_sweden_tradfri_motion_sensor_motion_2
+    to: 'off'
+    from: 'on'
+  condition:
+  - condition: state
+    entity_id: light.boven
+    state: 'on'
+  action:
+  - service: light.turn_off
+    data: {}
+    target:
+      entity_id: light.boven
+  mode: single
