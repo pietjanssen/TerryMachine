@@ -1,0 +1,64 @@
+blueprint:
+  name: SilverCrest/LIVARNO Smart Button - V2023.02.09
+  description: 'Control anything with a SilverCrest/LIVARNO Smart Button.
+
+    '
+  source_url: https://gist.github.com/sandervv/0eb77364b30ea553729c264a3c0065e1
+  domain: automation
+  input:
+    remote:
+      name: SilverCrest/LIVARNO Smart Button
+      description: Select a button to use with this blueprint
+      selector:
+        device:
+          integration: zha
+          manufacturer: _TZ3000_rco1yzb1
+          model: TS004F
+          entity:
+            domain: sensor
+            device_class: battery
+          multiple: false
+    button_short_press:
+      name: Short press
+      description: Action to run when the button is pressed once.
+      default: []
+      selector:
+        action: {}
+    button_double_press:
+      name: Double press
+      description: Action to run when the button is pressed twice
+      default: []
+      selector:
+        action: {}
+    button_long_press:
+      name: Long press
+      description: Action to run when the button is pressed continuously (4 seconds
+        or longer)
+      default: []
+      selector:
+        action: {}
+    button_long_release:
+      name: Long release
+      description: Action to run when the button is released after pressing it continuously.
+      default: []
+      selector:
+        action: {}
+mode: restart
+max_exceeded: silent
+trigger:
+- platform: event
+  event_type: zha_event
+  event_data:
+    device_id: !input remote
+action:
+- variables:
+    command: '{{ trigger.event.data.command }}'
+- choose:
+  - conditions: '{{ command == ''on'' }}'
+    sequence: !input button_short_press
+  - conditions: '{{ command == ''off'' }}'
+    sequence: !input button_double_press
+  - conditions: '{{ command == ''step'' }}'
+    sequence: !input button_long_press
+  - conditions: '{{ command == ''stop'' }}'
+    sequence: !input button_long_release

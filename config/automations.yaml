@@ -1,7 +1,6 @@
 - id: '1677190367431'
-  alias: People Greeting
-  description: Whenever a Family Member comes home, a short greeting will be played
-    to welcome them.
+  alias: Welcome Home
+  description: Whenever a Family member comes home, trigger stuff...
   trigger:
   - platform: state
     entity_id:
@@ -23,22 +22,6 @@
       minutes: 1
       seconds: 0
       milliseconds: 0
-  - service: group.set
-    data:
-      object_id: arriving
-      add_entities: '{{ trigger.to_state.entity_id }}'
-  - service: script.speech_engine
-    data:
-      personarriving: "{% set person = expand('group.arriving')|map(attribute='name')|join('
-        and ') %} {% set peoplecount = expand('group.arriving') | count %} {% if peoplecount
-        == 1 %}\n  {% set is_are = ' is ' %}\n{% else %}\n  {% set is_are = ' are
-        ' %}\n{% endif %}   {%- macro greeting_sentence(person, is_are) -%}  {{ [
-        \n  \"Welcome back home \" ~ person, \n  \"You had me at hello \" ~ person,
-        \n  \"Guess who is home?\" ~ person ~ is_are , \n  \"The wifi just got a little
-        more crowded. Welcome Home\" ~ person, \n] | random }}  {%- endmacro -%}  {{greeting_sentence(person,
-        is_are)}}"
-      call_responsibilities: 1
-      call_no_announcement: 1
   - if:
     - condition: state
       entity_id: light.woonkamer
@@ -50,10 +33,6 @@
       data: {}
       target:
         entity_id: light.woonkamer
-  - service: group.set
-    data:
-      object_id: arriving
-      entities: []
   mode: restart
 - id: '1677194632277'
   alias: Guest Mode Audio feedback
@@ -174,55 +153,6 @@
   - service: script.interior_off
     data: {}
   mode: single
-- id: '1677198063304'
-  alias: Detect & Adjust Lights
-  description: Detect & Adjust light brightness based on time of day.
-  trigger:
-  - platform: event
-    event_type: state_changed
-  condition:
-  - condition: state
-    entity_id: group.family
-    state: home
-  - condition: template
-    value_template: '{{ trigger.event.data is not none }}'
-  - condition: template
-    value_template: '{{ trigger.event.data.entity_id is not none }}'
-  - condition: template
-    value_template: '{{ trigger.event.data.entity_id.split(''.'')[0] == ''light''
-      }}'
-  - condition: template
-    value_template: '{{ trigger.event.data.entity_id.split(''_'')[0] != ''light.blake''
-      }}'
-  - condition: template
-    value_template: '{{ trigger.event.data.entity_id.split(''_'')[0] != ''light.dinner_light''
-      }}'
-  - condition: template
-    value_template: '{{ trigger.event.data.entity_id.split(''_'')[0] != ''light.hannahs_light''
-      }}'
-  - condition: template
-    value_template: '{{ trigger.event.data.entity_id.split(''_'')[0] != ''light.tv_light''
-      }}'
-  - condition: template
-    value_template: '{{ trigger.event.data.entity_id.split(''_'')[0] != ''light.bed_light''
-      }}'
-  - condition: template
-    value_template: '{{ trigger.event.data.entity_id.split(''_'')[0] != ''light.staircase_light''
-      }}'
-  - condition: template
-    value_template: '{{ trigger.event.data.new_state.state == ''on'' }}'
-  - condition: template
-    value_template: '{{ trigger.event.data.old_state.state == ''off'' }}'
-  action:
-  - service: light.turn_on
-    data:
-      entity_id: '{{ trigger.event.data.entity_id }}'
-      brightness: "{% set hour=states(\"sensor.time\").split(':')[0] | int %} {%-
-        if hour >= 5 and hour < 12  -%}\n  50\n{%- elif hour >= 12 and hour <20  -%}\n
-        \ 255\n{%- elif hour >= 20 and hour <24  -%}\n  80\n{%- else -%}\n  15\n{%-
-        endif %}\n"
-  mode: parallel
-  max: 10
 - id: '1677363387723'
   alias: Big Ben Clock
   description: ''
@@ -245,13 +175,6 @@
     entity_id: input_boolean.sleep_mode
     state: 'off'
   action:
-  - service: media_player.volume_set
-    data:
-      volume_level: 0.22
-    target:
-      entity_id: media_player.wheatley
-  - wait_template: '{{ not is_state(''media_player.wheatley'', ''playing'') }}'
-    continue_on_timeout: true
   - service: media_player.play_media
     target:
       entity_id: media_player.wheatley
@@ -263,124 +186,15 @@
         '
       media_content_type: audio/mp4
   mode: single
-- id: '1677742182670'
-  alias: Hall light ON
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - binary_sensor.ikea_of_sweden_tradfri_motion_sensor_motion_3
-    from: 'off'
-    to: 'on'
-  condition:
-  - condition: state
-    entity_id: light.ikea_of_sweden_tradfri_bulb_e27_cws_806lm_light
-    state: 'off'
-  - condition: or
-    conditions:
-    - condition: state
-      entity_id: group.family
-      state: home
-    - condition: state
-      entity_id: input_boolean.guest_mode
-      state: 'on'
-  action:
-  - if:
-    - condition: time
-      after: 00:00:00
-      before: 09:00:00
-    then:
-    - service: light.turn_on
-      data:
-        brightness_pct: 33
-      target:
-        entity_id: light.ikea_of_sweden_tradfri_bulb_e27_cws_806lm_light
-    else:
-    - service: light.turn_on
-      data: {}
-      target:
-        entity_id: light.ikea_of_sweden_tradfri_bulb_e27_cws_806lm_light
-  mode: single
-- id: '1677742471182'
-  alias: Hall light OFF
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - binary_sensor.ikea_of_sweden_tradfri_motion_sensor_motion_3
-    to: 'off'
-    from: 'on'
-  condition:
-  - condition: state
-    entity_id: light.ikea_of_sweden_tradfri_bulb_e27_cws_806lm_light
-    state: 'on'
-  action:
-  - service: light.turn_off
-    data: {}
-    target:
-      entity_id: light.ikea_of_sweden_tradfri_bulb_e27_cws_806lm_light
-  mode: single
-- id: '1677940707388'
-  alias: Boven light ON
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - binary_sensor.ikea_of_sweden_tradfri_motion_sensor_motion_2
-    from: 'off'
-    to: 'on'
-  condition:
-  - condition: state
-    entity_id: light.boven
-    state: 'off'
-  - condition: or
-    conditions:
-    - condition: state
-      entity_id: group.family
-      state: home
-    - condition: state
-      entity_id: input_boolean.guest_mode
-      state: 'on'
-  - condition: state
-    entity_id: sun.sun
-    state: below_horizon
-  - condition: state
-    entity_id: input_boolean.sleep_mode
-    state: 'off'
-  action:
-  - service: light.turn_on
-    data: {}
-    target:
-      entity_id: light.boven
-  mode: single
-- id: '1677941084964'
-  alias: Boven light OFF
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - binary_sensor.ikea_of_sweden_tradfri_motion_sensor_motion_2
-    to: 'off'
-    from: 'on'
-  condition:
-  - condition: state
-    entity_id: light.boven
-    state: 'on'
-  action:
-  - service: light.turn_off
-    data: {}
-    target:
-      entity_id: light.boven
-  mode: single
 - id: '1677942364759'
   alias: Notify Boris the Washing room is done.
   description: ''
   trigger:
   - platform: numeric_state
-    entity_id: sensor.washing_room_power_plug_power
+    entity_id: sensor.washing_room_wall_plug_power
     for:
       hours: 0
-      minutes: 1
+      minutes: 10
       seconds: 0
     below: 5
   condition: []
@@ -390,3 +204,71 @@
       title: TerryMachine
       message: The washing room is done.
   mode: single
+- id: '1678225083143'
+  alias: Hallway - Sensor light
+  description: ''
+  use_blueprint:
+    path: Blackshome/sensor-light.yaml
+    input:
+      motion_trigger:
+      - binary_sensor.ikea_of_sweden_tradfri_motion_sensor_motion_3
+      include_sun: sun_disabled
+      include_zone: zone_enabled
+      zone: zone.home
+      time_delay: 0
+      light_switch:
+        entity_id: light.ikea_of_sweden_tradfri_bulb_e27_cws_806lm_light
+      include_bypass: bypass_disabled
+      include_time: time_disabled
+      before_time: '22:00:00'
+      include_night_lights: night_lights_enabled
+      night_lights:
+        entity_id: light.ikea_of_sweden_tradfri_bulb_e27_cws_806lm_light
+      night_time_delay: 0
+      include_night_light_control: use_night_brightness
+      night_lights_after_time: 00:00:00
+      night_lights_before_time: 08:00:00
+      include_light_control: use_brightness
+- id: '1678472105494'
+  alias: Karel
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - switch.tz3000_rco1yzb1_ts004f_switch
+  condition: []
+  action:
+  - if:
+    - condition: state
+      entity_id: switch.tz3000_rco1yzb1_ts004f_switch
+      state: 'on'
+    then:
+    - service: light.turn_on
+      data: {}
+      target:
+        entity_id: light.woonkamer
+    else:
+    - service: light.turn_off
+      data: {}
+      target:
+        entity_id: light.woonkamer
+  mode: single
+- id: '1678895798861'
+  alias: Boven - Sensor Light
+  description: ''
+  use_blueprint:
+    path: Blackshome/sensor-light.yaml
+    input:
+      motion_trigger:
+      - binary_sensor.ikea_of_sweden_tradfri_motion_sensor_motion_2
+      light_switch:
+        entity_id: light.bed_light
+      include_light_control: use_brightness
+      include_time: time_enabled
+      after_time: 08:00:00
+      include_night_lights: night_lights_enabled
+      night_time_delay: 0
+      include_night_light_control: use_night_brightness
+      night_lights_before_time: 08:00:00
+      night_lights:
+        entity_id: light.staircase_light
