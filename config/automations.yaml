@@ -158,7 +158,7 @@
   description: ''
   trigger:
   - platform: time_pattern
-    minutes: '30'
+    hours: '0'
   condition:
   - condition: time
     after: '12:00:00'
@@ -211,7 +211,7 @@
     path: Blackshome/sensor-light.yaml
     input:
       motion_trigger:
-      - binary_sensor.ikea_of_sweden_tradfri_motion_sensor_motion_3
+      - binary_sensor.ikea_of_sweden_tradfri_motion_sensor_motion_2
       include_sun: sun_disabled
       include_zone: zone_enabled
       zone: zone.home
@@ -227,8 +227,9 @@
       night_time_delay: 0
       include_night_light_control: use_night_brightness
       night_lights_after_time: 00:00:00
-      night_lights_before_time: 08:00:00
+      night_lights_before_time: 07:30:00
       include_light_control: use_brightness
+      after_time: 07:30:00
 - id: '1678472105494'
   alias: Karel
   description: ''
@@ -260,7 +261,7 @@
     path: Blackshome/sensor-light.yaml
     input:
       motion_trigger:
-      - binary_sensor.ikea_of_sweden_tradfri_motion_sensor_motion_2
+      - binary_sensor.ikea_of_sweden_tradfri_motion_sensor_motion_3
       light_switch:
         entity_id: light.bed_light
       include_light_control: use_brightness
