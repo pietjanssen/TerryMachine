@@ -41,6 +41,7 @@ switch:
       - light.ikea_of_sweden_tradfri_bulb_e27_cws_806lm_light
       - light.staircase_light
       - light.staircase_light
+      - light.tv_light
     name: Fluxer
     start_time: "7:00"
     stop_time: "23:00"
